@@ -1,9 +1,12 @@
+using DiscountGrpc;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//add services to the container
+//Add services to the container
+
+//Application Services
 builder.Services.AddCarter();
 
 builder.Services.AddMediatR(config =>
@@ -14,12 +17,12 @@ builder.Services.AddMediatR(config =>
 
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
+//Data Services
 builder.Services.AddMarten(opts =>
 {
     opts.Connection(builder.Configuration.GetConnectionString("Database")!);
     opts.Schema.For<ShoppingCart>().Identity(x => x.Username);
 }).UseLightweightSessions();
-
 
 builder.Services.AddScoped<IBasketRepository , BasketRepository>();
 
@@ -36,6 +39,14 @@ builder.Services.AddScoped<IBasketRepository , BasketRepository>();
 //});
 
 
+//GRPC Services
+builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(opts =>
+{
+    opts.Address = new Uri(builder.Configuration["GrpcSettings:DiscountUrl"]!);
+});
+
+
+//Cross cutting services
 builder.Services.AddHealthChecks().AddNpgSql(builder.Configuration.GetConnectionString("Database")!);
 
 
